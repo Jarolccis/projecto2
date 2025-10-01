@@ -1,0 +1,40 @@
+# Docker Compose file for production
+
+services:
+  # FastAPI application
+  web:
+    build: .
+    container_name: rebate-management-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_NAME=Rebates Management API
+      - APP_VERSION=0.1.0
+      - DEBUG=false
+      - API_PREFIX=/api/v1
+    volumes:
+      # Mount source code for development (comment out for production)
+      - .:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a reverse proxy (uncomment if needed)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: rebate-management-nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - web
+  #   restart: unless-stopped
+
+networks:
+  default:
+    name: rebate-management-network

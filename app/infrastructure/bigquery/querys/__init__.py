@@ -1,0 +1,1 @@
+"""BigQuery queries package."""
