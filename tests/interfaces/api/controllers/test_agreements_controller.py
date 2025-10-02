@@ -1,10 +1,10 @@
-
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException, status
 from app.interfaces.api.controllers.agreements_controller import AgreementController
-from app.interfaces.schemas.agreement_schema import AgreementCreateRequest, AgreementCreateResponse
+from app.interfaces.schemas.agreement_schema import AgreementCreateRequest, AgreementCreateResponse, AgreementSearchRequest, AgreementUpdateRequest, AgreementDetailResponse
 from app.core.agreement_enums import SourceSystemEnum
+from app.core.response import SuccessResponse, PaginatedResponse
 from datetime import date, datetime
 
 class DummyRequest:
@@ -83,4 +83,104 @@ async def test_create_agreement_exception():
     use_cases.create_agreement.side_effect = Exception("fail")
     with pytest.raises(HTTPException) as excinfo:
         await controller.create_agreement(request, agreement_data, use_cases)
+    assert excinfo.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+@pytest.mark.asyncio
+async def test_search_agreements_success():
+    controller = AgreementController()
+    request = DummyRequest()
+    search_request = AgreementSearchRequest()
+    use_cases = AsyncMock()
+    # Simula un resultado de búsqueda
+    mock_result = MagicMock()
+    mock_result.total_count = 1
+    mock_result.agreements = [MagicMock()]
+    use_cases.search_agreements.return_value = mock_result
+    response = await controller.search_agreements(request, search_request, use_cases)
+    assert response is not None
+    assert response.pagination["total"] == 1
+
+@pytest.mark.asyncio
+async def test_search_agreements_value_error():
+    controller = AgreementController()
+    request = DummyRequest()
+    search_request = AgreementSearchRequest()
+    use_cases = AsyncMock()
+    use_cases.search_agreements.side_effect = ValueError("Invalid search")
+    with pytest.raises(HTTPException) as excinfo:
+        await controller.search_agreements(request, search_request, use_cases)
+    assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
+
+@pytest.mark.asyncio
+async def test_search_agreements_exception():
+    controller = AgreementController()
+    request = DummyRequest()
+    search_request = AgreementSearchRequest()
+    use_cases = AsyncMock()
+    use_cases.search_agreements.side_effect = Exception("fail")
+    with pytest.raises(HTTPException) as excinfo:
+        await controller.search_agreements(request, search_request, use_cases)
+    assert excinfo.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+@pytest.mark.asyncio
+async def test_get_agreement_by_id_success():
+    controller = AgreementController()
+    request = DummyRequest()
+    use_cases = AsyncMock()
+    mock_detail = MagicMock(products=[], store_rules=[], excluded_flags=[])
+    use_cases.get_agreement_by_id.return_value = mock_detail
+    response = await controller.get_agreement_by_id(request, 1, use_cases)
+    assert response is not None
+
+@pytest.mark.asyncio
+async def test_get_agreement_by_id_value_error():
+    controller = AgreementController()
+    request = DummyRequest()
+    use_cases = AsyncMock()
+    use_cases.get_agreement_by_id.side_effect = ValueError("Not found")
+    with pytest.raises(HTTPException) as excinfo:
+        await controller.get_agreement_by_id(request, 1, use_cases)
+    assert excinfo.value.status_code == status.HTTP_404_NOT_FOUND
+
+@pytest.mark.asyncio
+async def test_get_agreement_by_id_exception():
+    controller = AgreementController()
+    request = DummyRequest()
+    use_cases = AsyncMock()
+    use_cases.get_agreement_by_id.side_effect = Exception("fail")
+    with pytest.raises(HTTPException) as excinfo:
+        await controller.get_agreement_by_id(request, 1, use_cases)
+    assert excinfo.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+@pytest.mark.asyncio
+async def test_update_agreement_success():
+    controller = AgreementController()
+    request = DummyRequest()
+    agreement_data = MagicMock()
+    use_cases = AsyncMock()
+    mock_agreement = MagicMock(id=1, business_unit_id=1)
+    use_cases.update_agreement.return_value = mock_agreement
+    response = await controller.update_agreement(request, 1, agreement_data, use_cases)
+    assert response == mock_agreement
+
+@pytest.mark.asyncio
+async def test_update_agreement_value_error():
+    controller = AgreementController()
+    request = DummyRequest()
+    agreement_data = MagicMock()
+    use_cases = AsyncMock()
+    use_cases.update_agreement.side_effect = ValueError("Invalid update")
+    with pytest.raises(HTTPException) as excinfo:
+        await controller.update_agreement(request, 1, agreement_data, use_cases)
+    assert excinfo.value.status_code == status.HTTP_400_BAD_REQUEST
+
+@pytest.mark.asyncio
+async def test_update_agreement_exception():
+    controller = AgreementController()
+    request = DummyRequest()
+    agreement_data = MagicMock()
+    use_cases = AsyncMock()
+    use_cases.update_agreement.side_effect = Exception("fail")
+    with pytest.raises(HTTPException) as excinfo:
+        await controller.update_agreement(request, 1, agreement_data, use_cases)
     assert excinfo.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
